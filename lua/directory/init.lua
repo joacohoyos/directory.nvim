@@ -6,6 +6,15 @@ DirectoryConfig = DirectoryConfig or {}
 
 local M = {}
 
+local function find_project(path)
+	for key in pairs(DirectoryConfig.projects) do
+		if utils.contains(path, key) then
+			return DirectoryConfig.projects[key]
+		end
+	end
+	return nil
+end
+
 local function find_current_project()
 	for key in pairs(DirectoryConfig.projects) do
 		if utils.current_directory_contains(key) then
@@ -25,6 +34,10 @@ local function find_current_dir(project)
 	return nil
 end
 
+function M.get_directory_config()
+	return DirectoryConfig
+end
+
 function M.setup(config)
 	log.trace("setup(): Setting up...")
 
@@ -34,6 +47,7 @@ function M.setup(config)
 
 	local complete_config = utils.merge_tables({
 		projects = {},
+		directories = {},
 		global_settings = {
 			["default_buffer"] = "e .",
 			["save_current_buffer"] = true,
@@ -41,6 +55,22 @@ function M.setup(config)
 	}, config)
 	DirectoryConfig = complete_config
 	log.debug("setup() finish setup", DirectoryConfig)
+end
+
+function M.get_directory_index(dir)
+	local project = find_project(dir)
+
+	if not project then
+		log.debug("change_directory() project not found")
+		return
+	end
+
+	for idx = 1, #project do
+		if utils.contains(dir, project[idx].path) then
+			return idx
+		end
+	end
+	return nil
 end
 
 function M.change_directory(index)
@@ -53,7 +83,7 @@ function M.change_directory(index)
 	end
 
 	local new_dir = project[index]
-    log.debug("found new_dir", new_dir)
+	log.debug("found new_dir", new_dir)
 
 	if not new_dir then
 		log.debug("change_directory() directory not found por index ", index)
@@ -61,6 +91,9 @@ function M.change_directory(index)
 	end
 
 	local current_dir = find_current_dir(project)
+	if current_dir.path == new_dir.path then
+		return
+	end
 	local save_current_buffer = DirectoryConfig.global_settings.save_current_buffer
 	if current_dir and save_current_buffer then
 		log.debug("change_directory() saving current buffer ")

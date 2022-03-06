@@ -18,8 +18,12 @@ end
 
 local M = {}
 
+function M.contains(str, match)
+	return not not (string.find(str, match, 1, true))
+end
+
 function M.current_directory_contains(match)
-	return not not (string.find(vim.loop.cwd(), match, 1, true))
+	return M.contains(vim.loop.cwd(), match)
 end
 
 function M.merge_tables(...)
